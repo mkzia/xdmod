@@ -3,17 +3,17 @@
    XDMoD.PortalModule
 
    Author: Ryan Gentner
-   Last Updated: Wednesday, June 12, 2013 
-   
+   Last Updated: Wednesday, June 12, 2013
+
    Each of the tabs / modules in XDMoD extend XDMoD.PortalModule.  This class provides functional UI components
    which are common among most tabs / modules, such as
-   
+
    - Duration selector
    - Filter dialog (?)
    - Display menu (?)
    - Export menu
    - Add to report checkbox
-   
+
 */
 
 Ext.namespace('XDMoD');
@@ -23,7 +23,8 @@ XDMoD.ToolbarItem = {
     DURATION_SELECTOR: 1,
     EXPORT_MENU: 2,
     PRINT_BUTTON: 3,
-    REPORT_CHECKBOX: 4
+    REPORT_CHECKBOX: 4,
+    CHART_LINK_BUTTON: 5
 
 }; //XDMoD.ToolbarItem
 
@@ -57,11 +58,12 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
         durationSelector: false,
         exportMenu: false,
         printButton: false,
-        reportCheckbox: false
+        reportCheckbox: false,
+        chartLinkButton: false,
 
     }, //toolbarItems
 
-    // customOrder: The top-town order of entries in this array corresponds to 
+    // customOrder: The top-town order of entries in this array corresponds to
     //              the left-right ordering of components in the top toolbar.
 
     customOrder: [
@@ -69,28 +71,29 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
         XDMoD.ToolbarItem.DURATION_SELECTOR,
         XDMoD.ToolbarItem.EXPORT_MENU,
         XDMoD.ToolbarItem.PRINT_BUTTON,
-        XDMoD.ToolbarItem.REPORT_CHECKBOX
+        XDMoD.ToolbarItem.REPORT_CHECKBOX,
+        XDMoD.ToolbarItem.CHART_LINK_BUTTON
 
     ],
 
     // ------------------------------------------------------------------
 
-    initComponent: function() {
+    initComponent: function () {
 
         var self = this;
 
         self.addEvents('duration_change', 'export_option_selected', 'print_clicked');
 
-        // ----------------------------------------  
+        // ----------------------------------------
 
-        var createExportMenu = function(config) {
+        var createExportMenu = function (config) {
 
             var exportPanel = new CCR.xdmod.ui.ExportPanel({
                 config: config,
-                cancel_function: function() {
+                cancel_function: function () {
                     exportDialog.hide();
                 },
-                export_function: function(parameters) {
+                export_function: function (parameters) {
                     XDMoD.TrackEvent(self.title, 'Export Menu Used', Ext.encode(parameters), true);
                     self.fireEvent('export_option_selected', parameters);
                     exportDialog.hide();
@@ -112,21 +115,21 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
                 text: 'Export',
                 iconCls: 'export',
                 tooltip: 'Export chart data',
-                handler: function(b) {
+                handler: function (b) {
                     exportDialog.show();
                 }
 
             });
 
-            self.getExportMenu = function() {
+            self.getExportMenu = function () {
                 return exportButton;
             };
 
-            self.setImageExport = function(allowImgExport) {
+            self.setImageExport = function (allowImgExport) {
                 exportPanel.allowImageExport.call(exportPanel, allowImgExport);
             };
 
-            self.setExportDefaults = function(show_title) {
+            self.setExportDefaults = function (show_title) {
                 exportPanel.showTitleCheckbox.setValue(show_title);
                 exportPanel.settings.show_title = show_title;
             }
@@ -135,9 +138,9 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
         }; //createExportMenu
 
-        // ----------------------------------------  
+        // ----------------------------------------
 
-        var createPrintButton = function() {
+        var createPrintButton = function () {
 
             var printButton = new Ext.Button({
 
@@ -146,7 +149,7 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
                 tooltip: 'Print chart',
                 //disabled: true,
                 scope: this,
-                handler: function() {
+                handler: function () {
 
                     XDMoD.TrackEvent(self.title, 'Print Button Clicked');
 
@@ -156,7 +159,7 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
             }); //printButton
 
-            self.getPrintButton = function() {
+            self.getPrintButton = function () {
                 return printButton;
             };
 
@@ -164,9 +167,9 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
         }; //createPrintButton
 
-        // ----------------------------------------  
+        // ----------------------------------------
 
-        var createReportCheckbox = function(module_id) {
+        var createReportCheckbox = function (module_id) {
 
             var reportCheckbox = new CCR.xdmod.ReportCheckbox({
                 disabled: false,
@@ -174,13 +177,13 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
                 module: module_id
             });
 
-            reportCheckbox.on('toggled_checkbox', function(v) {
+            reportCheckbox.on('toggled_checkbox', function (v) {
 
                 XDMoD.TrackEvent(self.title, 'Clicked on Available For Report checkbox', v);
 
             }); //reportCheckbox.on('toggled_checkbox',...
 
-            self.getReportCheckbox = function() {
+            self.getReportCheckbox = function () {
                 return reportCheckbox;
             };
 
@@ -190,6 +193,32 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
         // ----------------------------------------
 
+        var createChartLinkButton = function () {
+
+            var chartLinkButton = new Ext.Button({
+
+                text: 'Link',
+                iconCls: 'favorites',
+                tooltip: 'Link to Current Chart',
+                //disabled: true,
+                scope: this,
+                handler: function () {
+
+                    self.fireEvent('chart_link_clicked');
+
+                } //handler
+
+            }); //chartLinkButton
+
+            self.getChartLinkButton = function () {
+                return chartLinkButton;
+            };
+
+            return chartLinkButton;
+
+        }; //createChartLinkButton
+
+        // ----------------------------------------
         var moduleConfig = {
 
             layout: 'border',
@@ -241,7 +270,7 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
                             var previousItems = [];
 
-                            moduleConfig.tbar.items.each(function(item) {
+                            moduleConfig.tbar.items.each(function (item) {
 
                                 previousItems.push(item);
 
@@ -254,7 +283,7 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
                                 items: previousItems,
 
-                                handler: function(d) {
+                                handler: function (d) {
 
                                     XDMoD.TrackEvent(self.title, 'Timeframe updated', Ext.encode(d));
 
@@ -268,7 +297,7 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
                             var durationToolbar = new CCR.xdmod.ui.DurationToolbar(baseConfig);
 
-                            self.getDurationSelector = function() {
+                            self.getDurationSelector = function () {
                                 return durationToolbar;
                             };
 
@@ -330,6 +359,19 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
                         break;
 
+                    case XDMoD.ToolbarItem.CHART_LINK_BUTTON:
+
+                        if (self.toolbarItems.chartLinkButton == true) {
+
+                            if (moduleConfig.tbar.items.getCount() > 1 && employSeparator)
+                                moduleConfig.tbar.addItem('-');
+
+                            moduleConfig.tbar.addItem(createChartLinkButton(self.module_id));
+
+                        }
+
+                        break;
+
                     default:
 
                         if (moduleConfig.tbar.items.getCount() > 1 && employSeparator)
@@ -345,7 +387,7 @@ XDMoD.PortalModule = Ext.extend(Ext.Panel, {
 
         } //if (self.usesToolbar == true)
 
-        // ----------------------------------------      
+        // ----------------------------------------
 
         Ext.apply(this, moduleConfig); //Ext.apply
 
